@@ -14,9 +14,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: main  # إجبار الروبوت على استخدام الفرع الرئيسي
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -31,26 +28,24 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python main.py
 
-      # --- الحل النهائي لمشاكل التزامن ---
-      - name: Commit and Push Safely
+      # --- الحل السحري (الخزنة المؤقتة) ---
+      - name: Push Result Safely
         run: |
+          # 1. إعداد هوية البوت
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           
-          # 1. التأكد أننا على الفرع الرئيسي ولسنا في حالة منفصلة
-          git checkout main
+          # 2. نخبئ الملف الناتج في مكان آمن خارج مجلد Git
+          cp playlist_active.m3u /tmp/playlist_active.m3u
           
-          # 2. سحب آخر التحديثات قبل إضافة الملف
-          git pull origin main
+          # 3. نجبر النظام على التطابق مع الموقع تماماً (إلغاء أي تضارب)
+          git fetch origin main
+          git reset --hard origin/main
           
-          # 3. إضافة الملف المولد
+          # 4. نسترجع الملف من الخزنة
+          cp /tmp/playlist_active.m3u playlist_active.m3u
+          
+          # 5. الحفظ والرفع (الآن الطريق ممهد 100%)
           git add playlist_active.m3u
-          
-          # 4. الحفظ
-          git commit -m "Auto-update playlist via AI" || echo "No changes to commit"
-          
-          # 5. سحب أخير مع دمج (Rebase) لضمان عدم وجود تضارب
-          git pull origin main --rebase
-          
-          # 6. الرفع النهائي
+          git commit -m "Daily AI Update" || echo "No changes to commit"
           git push origin main
