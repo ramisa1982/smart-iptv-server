@@ -2,20 +2,18 @@ name: Update Channels Daily
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # يعمل كل يوم منتصف الليل
-  workflow_dispatch:      # زر التشغيل اليدوي
+    - cron: '0 0 * * *' # منتصف الليل
+  workflow_dispatch:     # زر تشغيل يدوي
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write # إذن إجباري للكتابة
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -23,27 +21,31 @@ jobs:
           python-version: '3.10'
 
       - name: Install libraries
-        run: pip install -r requirements.txt
+        run: pip install requests google-generativeai
 
       - name: Run AI Script
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python main.py
 
-      # --- هنا التغيير الجذري: أوامر يدوية لحل التضارب ---
-      - name: Commit and Push Manually
+      # --- الحل الجذري هنا ---
+      # نستخدم أوامر Git يدوية بدلاً من الأدوات الجاهزة
+      - name: Force Update Playlist
         run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'actions@github.com'
+          # 1. تعريف المستخدم الوهمي
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
           
-          # إضافة الملف المحدث
+          # 2. إضافة الملف الناتج
           git add playlist_active.m3u
           
-          # محاولة الحفظ (إذا لم يكن هناك تغيير لن يحدث خطأ)
+          # 3. محاولة الحفظ (إذا لم تتغير القنوات لن يفعل شيئاً)
+          # المقطع "|| echo" يمنع توقف السكربت إذا لم يوجد تغيير
           git commit -m "Auto-update playlist via AI" || echo "No changes to commit"
           
-          # سحب التحديثات من الموقع ودمجها بالقوة (هذا يحل المشكلة الحمراء)
+          # 4. الخطوة السحرية: سحب التحديثات من الموقع ودمجها بالقوة
+          # هذا يحل مشكلة (rejected non-fast-forward) نهائياً
           git pull origin main --rebase
           
-          # الرفع النهائي
+          # 5. الرفع النهائي
           git push origin main
