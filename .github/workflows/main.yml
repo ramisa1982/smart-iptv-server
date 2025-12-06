@@ -3,22 +3,24 @@ name: Update Channels Daily
 on:
   schedule:
     - cron: '0 0 * * *'  # يعمل كل يوم منتصف الليل
-  workflow_dispatch:      # يسمح لك بتشغيله يدوياً بزر
+  workflow_dispatch:      # زر التشغيل اليدوي
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # إذن للكتابة في المستودع
+      contents: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.10'
 
       - name: Install libraries
         run: pip install -r requirements.txt
@@ -28,8 +30,20 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python main.py
 
-      - name: Commit and Push changes
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Updated Channel List via AI"
-          file_pattern: "playlist_active.m3u"
+      # --- هنا التغيير الجذري: أوامر يدوية لحل التضارب ---
+      - name: Commit and Push Manually
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+          
+          # إضافة الملف المحدث
+          git add playlist_active.m3u
+          
+          # محاولة الحفظ (إذا لم يكن هناك تغيير لن يحدث خطأ)
+          git commit -m "Auto-update playlist via AI" || echo "No changes to commit"
+          
+          # سحب التحديثات من الموقع ودمجها بالقوة (هذا يحل المشكلة الحمراء)
+          git pull origin main --rebase
+          
+          # الرفع النهائي
+          git push origin main
