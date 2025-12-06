@@ -1,0 +1,9 @@
+#EXTM3U
+#EXTINF:-1 group-title="General", 
+https://iptv-org.github.io/iptv/index.m3u
+#EXTINF:-1 group-title="General", 
+https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8
+#EXTINF:-1 group-title="General", 
+https://raw.githubusercontent.com/hemzaberkane/ARAB-IPTV/refs/heads/main/ARABIPTV.m3u
+#EXTINF:-1 group-title="General", 
+https://iptv-org.github.io/iptv/languages/ara.m3u
