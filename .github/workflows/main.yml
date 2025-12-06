@@ -2,18 +2,21 @@ name: Update Channels Daily
 
 on:
   schedule:
-    - cron: '0 0 * * *' # منتصف الليل
-  workflow_dispatch:     # زر تشغيل يدوي
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # إذن إجباري للكتابة
+      contents: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: main  # إجبار الروبوت على استخدام الفرع الرئيسي
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -28,24 +31,26 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python main.py
 
-      # --- الحل الجذري هنا ---
-      # نستخدم أوامر Git يدوية بدلاً من الأدوات الجاهزة
-      - name: Force Update Playlist
+      # --- الحل النهائي لمشاكل التزامن ---
+      - name: Commit and Push Safely
         run: |
-          # 1. تعريف المستخدم الوهمي
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           
-          # 2. إضافة الملف الناتج
+          # 1. التأكد أننا على الفرع الرئيسي ولسنا في حالة منفصلة
+          git checkout main
+          
+          # 2. سحب آخر التحديثات قبل إضافة الملف
+          git pull origin main
+          
+          # 3. إضافة الملف المولد
           git add playlist_active.m3u
           
-          # 3. محاولة الحفظ (إذا لم تتغير القنوات لن يفعل شيئاً)
-          # المقطع "|| echo" يمنع توقف السكربت إذا لم يوجد تغيير
+          # 4. الحفظ
           git commit -m "Auto-update playlist via AI" || echo "No changes to commit"
           
-          # 4. الخطوة السحرية: سحب التحديثات من الموقع ودمجها بالقوة
-          # هذا يحل مشكلة (rejected non-fast-forward) نهائياً
+          # 5. سحب أخير مع دمج (Rebase) لضمان عدم وجود تضارب
           git pull origin main --rebase
           
-          # 5. الرفع النهائي
+          # 6. الرفع النهائي
           git push origin main
